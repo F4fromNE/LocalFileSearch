@@ -24,7 +24,7 @@ public class ThreadS implements Runnable {
 		List<MyFile> Content = root.myListFiles();
 		for(MyFile file:Content){
 			try {
-				Thread.sleep(random.nextInt(200));
+				Thread.sleep(random.nextInt(10));
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

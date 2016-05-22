@@ -8,6 +8,8 @@ import javax.swing.event.ListSelectionListener;
 import javax.swing.plaf.basic.BasicTreeUI.SelectionModelPropertyChangeHandler;
 import javax.swing.table.AbstractTableModel;
 
+import org.w3c.dom.Attr;
+
 import java.awt.Window.Type;
 import java.awt.GridBagLayout;
 import com.jgoodies.forms.layout.FormLayout;
@@ -29,8 +31,20 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.nio.file.attribute.FileTime;
+import java.sql.Time;
+import java.text.DateFormatSymbols;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneOffset;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.Vector;
 import java.beans.PropertyChangeListener;
@@ -56,6 +70,9 @@ public class FileSearcher extends JFrame implements ActionListener, PropertyChan
 
 	private JLabel lblBaseFolder = new JLabel("Base Folder:");
 	private JLabel lblContains = new JLabel("File Contains:");
+	private JCheckBox lblCreated = new JCheckBox("Created:");
+	private JCheckBox lblModified = new JCheckBox("Modified:");
+	private JCheckBox lblAccessed = new JCheckBox("Accessed:");
 	private JCheckBox chckbxCaseSensitive = new JCheckBox("Case sensitive");
 	private JButton btnNewButton = new JButton("...");
 
@@ -66,7 +83,28 @@ public class FileSearcher extends JFrame implements ActionListener, PropertyChan
 	private static AtomicInteger FileSearched = new AtomicInteger(0);
 	private int TotalFiles;
 	private Helper helper = new Helper();
+	
+	private final JComboBox create_0 = new JComboBox();
+	private final JComboBox create_1 = new JComboBox();
+	private final JComboBox modified_0 = new JComboBox();
+	private final JComboBox modified_1 = new JComboBox();
+	private final JComboBox accessed_0 = new JComboBox();
+	private final JComboBox accessed_1 = new JComboBox();
 
+	
+
+	private JSpinner spinner = new JSpinner();
+	private JSpinner spinner_1 = new JSpinner();
+	private JSpinner spinner_2 = new JSpinner();
+	private JSpinner spinner_3 = new JSpinner();
+	private JSpinner spinner_4 = new JSpinner();
+	private JSpinner spinner_5 = new JSpinner();
+	private final JLabel lblTo = new JLabel("To");
+	private final JLabel lblTo_1 = new JLabel("To");
+	private final JLabel lblTo_2 = new JLabel("To");
+	
+	private int searchMethod;
+	
 	public FileSearcher() {
 
 		init();
@@ -82,6 +120,9 @@ public class FileSearcher extends JFrame implements ActionListener, PropertyChan
 	}
 
 	public void init() {
+		
+		searchMethod = 0;
+		
 		// File searcher
 		this.setTitle("File Searcher 1.0");
 		this.setSize(536, 449);
@@ -90,11 +131,11 @@ public class FileSearcher extends JFrame implements ActionListener, PropertyChan
 		getContentPane().setLayout(null);
 
 		// Label: Base Folder
-		lblBaseFolder.setBounds(36, 10, 99, 42);
+		lblBaseFolder.setBounds(36, 10, 92, 42);
 		getContentPane().add(lblBaseFolder);
 
 		// Label: WordsContains
-		lblContains.setBounds(36, 47, 139, 42);
+		lblContains.setBounds(36, 47, 92, 42);
 		getContentPane().add(lblContains);
 
 		// TextField: RootFolder
@@ -106,17 +147,17 @@ public class FileSearcher extends JFrame implements ActionListener, PropertyChan
 
 		// TextField: Filecontain
 		Filecontain = new JTextField();
-		Filecontain.setBounds(130, 58, 341, 21);
+		Filecontain.setBounds(130, 58, 265, 21);
 		getContentPane().add(Filecontain);
 		Filecontain.setColumns(10);
 
 		// Checkbox for Case
-		chckbxCaseSensitive.setBounds(236, 89, 109, 23);
+		chckbxCaseSensitive.setBounds(401, 57, 109, 23);
 		getContentPane().add(chckbxCaseSensitive);
 
 		// ProgressBar
 
-		progressBar.setBounds(10, 118, 500, 23);
+		progressBar.setBounds(10, 176, 410, 20);
 		progressBar.setValue(0);
 		progressBar.setStringPainted(true);
 		getContentPane().add(progressBar);
@@ -130,7 +171,7 @@ public class FileSearcher extends JFrame implements ActionListener, PropertyChan
 				actionSearch();
 			}
 		});
-		btnSearch.setBounds(378, 89, 93, 23);
+		btnSearch.setBounds(430, 174, 80, 20);
 		btnSearch.addActionListener(this);
 		getContentPane().add(btnSearch);
 
@@ -175,16 +216,107 @@ public class FileSearcher extends JFrame implements ActionListener, PropertyChan
 		});
 		// listScrollPane = new JScrollPane(resultList);
 		listScrollPane = new JScrollPane(table);
-		listScrollPane.setBounds(10, 150, 500, 250);
+		listScrollPane.setBounds(10, 209, 500, 191);
 		getContentPane().add(listScrollPane);
+		
+		
+		lblCreated.setBounds(36, 100, 80, 20);
+		getContentPane().add(lblCreated);
+
+		lblModified.setBounds(36, 120, 80, 20);
+		getContentPane().add(lblModified);
+		
+		
+		lblAccessed.setBounds(36, 140, 80, 20);
+		getContentPane().add(lblAccessed);
+		
+		
+		create_0.setBounds(130, 100, 80, 20);
+		getContentPane().add(create_0);
+		
+		create_1.setBounds(340, 100, 80, 20);
+		getContentPane().add(create_1);
+		
+		modified_0.setBounds(130, 120, 80, 20);
+		getContentPane().add(modified_0);
+		modified_1.setBounds(340, 120, 80, 20);
+		getContentPane().add(modified_1);
+		
+		accessed_0.setBounds(130, 140, 80, 20);
+		getContentPane().add(accessed_0);
+		accessed_1.setBounds(340, 140, 80, 20);
+		getContentPane().add(accessed_1);
+		
+		LocalDate LD = LocalDate.now();
+		for(int i = 0;i>-30;i--){
+			create_0.addItem(LD.plusDays(i));
+			create_1.addItem(LD.plusDays(i));
+			modified_0.addItem(LD.plusDays(i));
+			modified_1.addItem(LD.plusDays(i));
+			accessed_0.addItem(LD.plusDays(i));
+			accessed_1.addItem(LD.plusDays(i));
+		};
+		
+		
+		List<LocalTime> LT = new ArrayList<>();
+		
+		for(LocalTime Localt = LocalTime.MIN;Localt.isBefore(LocalTime.MAX.plusMinutes(-30));Localt = Localt.plusMinutes(30)){
+			//System.out.println(Localt.toString());
+			LT.add(Localt);
+		}
+		
+		SpinnerListModel LModel = new SpinnerListModel(LT);
+		SpinnerListModel LModel1 = new SpinnerListModel(LT);
+		SpinnerListModel LModel2 = new SpinnerListModel(LT);
+		SpinnerListModel LModel3 = new SpinnerListModel(LT);
+		SpinnerListModel LModel4 = new SpinnerListModel(LT);
+		SpinnerListModel LModel5 = new SpinnerListModel(LT);
+		spinner = new JSpinner(LModel);
+		spinner_1 = new JSpinner(LModel1);
+		spinner_2 = new JSpinner(LModel2);
+		spinner_3 = new JSpinner(LModel3);
+		spinner_4 = new JSpinner(LModel4);
+		spinner_5 = new JSpinner(LModel5);
+		
+		spinner.setBounds(220, 100, 80, 20);
+		getContentPane().add(spinner);
+		
+		spinner_1.setBounds(430, 100, 80, 20);
+		getContentPane().add(spinner_1);
+		
+		spinner_2.setBounds(220, 120, 80, 20);
+		getContentPane().add(spinner_2);
+		
+		spinner_3.setBounds(430, 120, 80, 20);
+		getContentPane().add(spinner_3);
+		
+		spinner_4.setBounds(220, 140, 80, 20);
+		getContentPane().add(spinner_4);
+		
+		spinner_5.setBounds(430, 140, 80, 20);
+		getContentPane().add(spinner_5);
+	
+
+		
+		lblTo.setHorizontalAlignment(SwingConstants.CENTER);
+		lblTo.setBounds(310, 100, 20, 20);
+		getContentPane().add(lblTo);
+		
+		lblTo_1.setHorizontalAlignment(SwingConstants.CENTER);
+		lblTo_1.setBounds(310, 120, 20, 20);
+		getContentPane().add(lblTo_1);
+		
+		lblTo_2.setHorizontalAlignment(SwingConstants.CENTER);
+		lblTo_2.setBounds(310, 140, 20, 20);
+		getContentPane().add(lblTo_2);
+		
 	}
 
 	private void actionSearch() {
 		keywords = Filecontain.getText();
 		CaseSensitive = chckbxCaseSensitive.isSelected();
 		TotalFiles = helper.FileCount(RootFolder.getText());
-		ThreadS root = new ThreadS(RootFolder.getText(), Filecontain.getText(), SearchResult, FileSearched,
-				CaseSensitive);
+		ThreadS root = new ThreadS();
 		new Thread(root).start();
 		// do{
 		// try {
@@ -200,6 +332,8 @@ public class FileSearcher extends JFrame implements ActionListener, PropertyChan
 	private void reset() {
 		FileSearched.set(0);
 		SearchResult.clear();
+		table.removeAll();
+		progressBar.setValue(0);
 	}
 
 	class Task extends SwingWorker<Void, Void> {
@@ -266,7 +400,7 @@ public class FileSearcher extends JFrame implements ActionListener, PropertyChan
 
 	}
 
-	class MyTableModel extends AbstractTableModel {
+	public class MyTableModel extends AbstractTableModel {
 		private String[] columnNames = TableHeader;
 		// private Object[][] data = new Object[][]{};
 		private Vector<Object[]> data = new Vector<Object[]>();
@@ -317,5 +451,118 @@ public class FileSearcher extends JFrame implements ActionListener, PropertyChan
 			fireTableCellUpdated(row, col);
 		}
 
+	}
+	
+	public class ThreadS implements Runnable {
+		public ThreadS(){
+
+		}
+		public void run(){
+			if(searchMethod == 0){
+				Random random = new Random();
+				MyFile root = new MyFile(RootFolder.getText());
+				List<MyFile> Content = root.myListFiles();
+				String KeyWords = Filecontain.getText();
+				for(MyFile file:Content){
+					try {
+						Thread.sleep(random.nextInt(10));
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					if(file.isDirectory()){
+						ThreadS nThread = new ThreadS();
+						new Thread(nThread).start();
+					}
+					else{//Begin to searchfile
+					
+						String filename = file.getName();
+						boolean S_result = true;
+						FileSearched.addAndGet(1);
+						if(CaseSensitive == false){
+							filename = filename.toLowerCase();
+							KeyWords = KeyWords.toLowerCase();
+						}
+						
+						if(filename.contains(KeyWords)){
+							
+						}
+						else{
+							continue;
+						}
+						
+						//Check 
+						try {
+							
+							BasicFileAttributes attr = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
+							if(lblCreated.isSelected()){
+								LocalDate date0 = (LocalDate) create_0.getSelectedItem();
+								LocalTime time0 = (LocalTime) spinner.getValue();
+								LocalDateTime TimeFrom = LocalDateTime.of(date0,time0);
+								LocalDate date1 = (LocalDate)create_1.getSelectedItem();
+								LocalTime time1 = (LocalTime)spinner_1.getValue();
+								LocalDateTime TimeTo = LocalDateTime.of(date1,time1);
+								
+								FileTime DT_from = FileTime.from(TimeFrom.toInstant(ZoneOffset.ofHours(0)));
+								FileTime DT_to = FileTime.from(TimeTo.toInstant(ZoneOffset.ofHours(0)));
+								
+								FileTime C_Time = attr.creationTime();
+								if(C_Time.compareTo(DT_from)>=0 & C_Time.compareTo(DT_to)<=0){
+								}							
+								else{
+									continue;
+								}
+							}
+
+							if(lblModified.isSelected()){
+								LocalDate date0 = (LocalDate)modified_0.getSelectedItem();
+								LocalTime time0 = (LocalTime)spinner_2.getValue();
+								LocalDateTime TimeFrom = LocalDateTime.of(date0,time0);
+								LocalDate date1 = (LocalDate)modified_1.getSelectedItem();
+								LocalTime time1 = (LocalTime)spinner_3.getValue();
+								LocalDateTime TimeTo = LocalDateTime.of(date1,time1);
+								
+								FileTime DT_from = FileTime.from(TimeFrom.toInstant(ZoneOffset.ofHours(0)));
+								FileTime DT_to = FileTime.from(TimeTo.toInstant(ZoneOffset.ofHours(0)));
+								
+								FileTime M_Time = attr.lastModifiedTime();
+								if(M_Time.compareTo(DT_from)>=0 & M_Time.compareTo(DT_to)<=0){
+									
+								}							
+								else{
+									continue;
+								}
+							}
+							
+							if(lblAccessed.isSelected()){
+								LocalDate date0 = (LocalDate)accessed_0.getSelectedItem();
+								LocalTime time0 = (LocalTime)spinner_4.getValue();
+								LocalDateTime TimeFrom = LocalDateTime.of(date0,time0);
+								LocalDate date1 = (LocalDate)accessed_1.getSelectedItem();
+								LocalTime time1 = (LocalTime)spinner_5.getValue();
+								LocalDateTime TimeTo = LocalDateTime.of(date1,time1);
+								
+								FileTime DT_from = FileTime.from(TimeFrom.toInstant(ZoneOffset.ofHours(0)));
+								FileTime DT_to = FileTime.from(TimeTo.toInstant(ZoneOffset.ofHours(0)));
+								
+								FileTime A_Time = attr.lastModifiedTime();
+								if(A_Time.compareTo(DT_from)>=0 & A_Time.compareTo(DT_to)<=0){
+									
+								}							
+								else{
+									continue;
+								}
+							}
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+						if(S_result){
+							SearchResult.add(file);
+						}
+					}
+				}
+			}
+		}
 	}
 }
